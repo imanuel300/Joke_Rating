@@ -63,4 +63,22 @@ def get_all_jokes_with_ratings():
     ''')
     results = c.fetchall()
     conn.close()
-    return results 
+    return results
+
+def delete_joke(joke_id):
+    """
+    מחיקת בדיחה וכל הדירוגים שלה
+    """
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    try:
+        # מחיקת הדירוגים קודם (בגלל ה-foreign key)
+        c.execute('DELETE FROM ratings WHERE joke_id = ?', (joke_id,))
+        # מחיקת הבדיחה
+        c.execute('DELETE FROM jokes WHERE id = ?', (joke_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()

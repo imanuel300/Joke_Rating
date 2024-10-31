@@ -207,6 +207,29 @@ st.markdown("""
         margin: 0 !important;
         padding: 0 !important;
     }
+
+    /* עיצוב כפתור מחיקה */
+    .delete-button {
+        background: #e74c3c !important;
+        margin-top: 10px;
+    }
+    
+    .delete-button:hover {
+        background: #c0392b !important;
+    }
+    
+    /* מודל אישור מחיקה */
+    .delete-modal {
+        background: rgba(0,0,0,0.8);
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        color: white;
+    }
+    
+    .delete-modal button {
+        margin: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -218,60 +241,98 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# משתנה גלובלי לשמירת הטאב האחרון
-if 'current_tab' not in st.session_state:
-    st.session_state.current_tab = "בדיחות"
+# משתנה גלובלי לשמירת הטאב הנוכחי
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = 0
 
-# טאבים
-tabs = st.tabs(["📊 בדיחות קיימות", "🎯 הוספת בדיחה"])
+# בתחילת הקובץ, אחרי ההגדרות הראשוניות
+if 'submitted_joke' not in st.session_state:
+    st.session_state.submitted_joke = False
 
-# טאב בדיחות קיימות
-with tabs[0]:
-    jokes = db.get_all_jokes_with_ratings()
+# כפתורי ניווט במקום טאבים
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("📊 בדיחות קיימות", use_container_width=True, type="primary"):
+        st.query_params.clear()
+        st.rerun()
+with col2:
+    if st.button("🎯 הוספת בדיחה", use_container_width=True):
+        st.switch_page("pages/add_joke.py")
+
+st.markdown("<hr>", unsafe_allow_html=True)
+
+# תצוגת הבדיחות
+jokes = db.get_all_jokes_with_ratings()
+
+if not jokes:
+    st.info("👋 עדיין אין בדיחות במערכת. היה הראשון להוסיף בדיחה!")
+
+for joke in jokes:
+    joke_id, content, avg_rating, rating_count = joke
     
-    if not jokes:
-        st.info("👋 עדיין אין בדיחות במערכת. היה הראשון להוסיף בדיחה!")
-    
-    for joke in jokes:
-        joke_id, content, avg_rating, rating_count = joke
-        
-        with st.container():
-            st.markdown(f"""
-            <div class="joke-card">
-                <div class="joke-content">{content}</div>
-                <div class="rating-container">
-                    <p class="rating-stars">{'⭐' * int(round(avg_rating)) if avg_rating > 0 else '☆☆☆☆☆'}</p>
-                    <p class="rating-text">דירוג ממוצע: {avg_rating:.1f}/5<br>({rating_count} דירוגים)</p>
-                </div>
+    with st.container():
+        st.markdown(f"""
+        <div class="joke-card">
+            <div class="joke-content">{content}</div>
+            <div class="rating-container">
+                <p class="rating-stars">{'⭐' * int(round(avg_rating)) if avg_rating > 0 else '☆☆☆☆☆'}</p>
+                <p class="rating-text">דירוג ממוצע: {avg_rating:.1f}/5<br>({rating_count} דירוגים)</p>
             </div>
-            """, unsafe_allow_html=True)
-            
-            # התאמת הדירוג למובייל
-            st.markdown('<div class="rating-text">דרג/י את הבדיחה:</div>', unsafe_allow_html=True)
-            
-            # יצירת כפתורי דירוג בשורה אחת
-            col1, col2, col3, col4, col5 = st.columns(5)
-            rating = None
-            for i, col in [(1, col1), (2, col2), (3, col3), (4, col4), (5, col5)]:
-                if col.button(f"{'⭐' * i}", key=f"star_{joke_id}_{i}", use_container_width=True):
-                    rating = i
-            
-            if rating:
-                db.add_rating(joke_id, rating)
-                st.success("תודה על הדירוג! 🌟")
-                st.rerun()
-
-# טאב הוספת בדיחה
-with tabs[1]:
-    with st.form("new_joke_form"):
-        joke_content = st.text_area("הכניסו את הבדיחה שלכם כאן:", height=150,
-                                  placeholder="כתבו כאן את הבדיחה שלכם...")
-        submitted = st.form_submit_button("שליחת הבדיחה ✨")
+        </div>
+        """, unsafe_allow_html=True)
         
-        if submitted and joke_content:
-            joke_id = db.add_joke(joke_content)
-            st.success("הבדיחה נוספה בהצלחה! 🎉")
-            st.balloons()
-            # מעבר לטאב הבדיחות
-            st.session_state.current_tab = "בדיחות"
+        # התאמת הדירוג למובייל
+        st.markdown('<div class="rating-text">דרג/י את הבדיחה:</div>', unsafe_allow_html=True)
+        
+        # יצירת כפתורי דירוג בשורה אחת
+        col1, col2, col3, col4, col5 = st.columns(5)
+        rating = None
+        for i, col in [(1, col1), (2, col2), (3, col3), (4, col4), (5, col5)]:
+            if col.button(f"{'⭐' * i}", key=f"star_{joke_id}_{i}", use_container_width=True):
+                rating = i
+        
+        if rating:
+            db.add_rating(joke_id, rating)
+            st.success("תודה על הדירוג! 🌟")
             st.rerun()
+        
+        # כפתור מחיקה
+        delete_key = f"delete_{joke_id}"
+        confirm_key = f"confirm_{joke_id}"
+        
+        if delete_key not in st.session_state:
+            st.session_state[delete_key] = False
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🗑️ מחק בדיחה", key=f"delete_button_{joke_id}", 
+                       type="secondary", use_container_width=True):
+                st.session_state[delete_key] = True
+        
+        # חלון אישור מחיקה
+        if st.session_state[delete_key]:
+            with st.container():
+                st.markdown("""
+                <div class="delete-modal">
+                    <h3>האם את/ה בטוח/ה שברצונך למחוק את הבדיחה?</h3>
+                    <p>פעולה זו אינה הפיכה</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("כן, מחק", key=f"confirm_delete_{joke_id}", 
+                               type="primary", use_container_width=True):
+                        db.delete_joke(joke_id)
+                        st.success("הבדיחה נמחקה בהצלחה!")
+                        st.rerun()
+                with col2:
+                    if st.button("ביטול", key=f"cancel_delete_{joke_id}", 
+                               type="secondary", use_container_width=True):
+                        st.session_state[delete_key] = False
+                        st.rerun()
+
+# בדיקה אם יש פרמטר tab בכתובת
+if 'tab' in st.query_params and st.query_params['tab'] == 'jokes':
+    st.query_params.clear()
+    st.switch_page("app.py")
