@@ -6,6 +6,10 @@
 
 אפליקציה מהנה המאפשרת למשתמשים לשתף בדיחות ולדרג בדיחות של אחרים.
 
+### 🔗 קישורים
+- [צפייה באפליקציה](https://jokerating.streamlit.app/)
+- [קוד המקור ב-GitHub](https://github.com/imanuel300/Joke_Rating)
+
 ### ✨ תכונות עיקריות
 - 📝 הוספת בדיחות חדשות
 - ⭐ דירוג בדיחות (1-5 כוכבים)
@@ -18,11 +22,11 @@
 #### 1. הורדת הפרויקט
 שכפל את המאגר למחשב שלך:
 
-    git clone https://github.com/username/joke-rating.git
-    cd joke-rating
+    git clone https://github.com/imanuel300/Joke_Rating.git
+    cd Joke_Rating
 
 #### 2. התקנת Python
-וודא שמותקן Python בגרסה 3.8 ומעלה. ניתן להוריד מ:
+וודא שמותקן Python ברסה 3.8 ומעלה. ניתן להוריד מ:
 https://www.python.org/downloads/
 
 #### 3. יצירת סביבה וירטואלית
